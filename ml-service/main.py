@@ -24,12 +24,19 @@ class QuestionnaireInput(BaseModel):
 app = FastAPI(
     title="Autism Behavior Detection ML Service",
     description="Pure ML backend for video-based autism behavior detection",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in (
+            os.environ.get("CORS_ORIGINS")
+            or "https://autisense.deployio.tech,https://autisense-ml.deployio.tech,http://localhost:3000,http://localhost:5173"
+        ).split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,7 +52,7 @@ def read_root():
     return {
         "service": "Autism Behavior Detection ML Service",
         "status": "running",
-        "endpoints": ["/analyze", "/predict/questionnaire"]
+        "endpoints": ["/analyze", "/predict/questionnaire"],
     }
 
 
@@ -57,7 +64,7 @@ def predict_questionnaire(data: QuestionnaireInput):
             "age": data.age,
             "sex": data.sex,
             "jaundice": data.jaundice,
-            "family_asd": data.family_asd
+            "family_asd": data.family_asd,
         }
         return questionnaire_predictor.predict(questionnaire_data)
     except Exception as exc:
@@ -82,4 +89,5 @@ def analyze_video(request: AnalyzeRequest):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
